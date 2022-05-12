@@ -1,7 +1,15 @@
-use std::{cell::RefCell, sync::Arc, thread::JoinHandle};
+use std::{cell::RefCell, fs, sync::Arc, thread::JoinHandle};
+use libc::write;
+use crate::direct_io::File;
 
 use ::models::AbstractPoints;
+use ::models::SeriesInfo;
+use ::models::Tag;
+use ::models::FieldInfo;
+use ::models::FieldInfoFromParts;
+use ::models::ValueType;
 use once_cell::sync::OnceCell;
+use snafu::ResultExt;
 use protos::{
     kv_service::{WritePointsRpcRequest, WritePointsRpcResponse, WriteRowsRpcRequest},
     models,
@@ -14,13 +22,8 @@ use tokio::{
     },
 };
 
-use crate::{
-    error::Result,
-    kv_option::{DBOptions, Options, QueryOption, WalConfig},
-    version_set,
-    wal::{self, WalEntryType, WalManager, WalResult, WalTask},
-    Error, FileManager, MemCache, Task, Version, VersionSet, WorkerQueue,
-};
+use crate::{error::Result, kv_option::{DBOptions, Options, QueryOption, WalConfig}, version_set, wal::{self, WalEntryType, WalManager, WalResult, WalTask}, Error, FileManager, MemCache, Task, Version, VersionSet, WorkerQueue, file_manager};
+use crate::forward_index::ForwardIndex;
 
 pub struct Entry {
     pub series_id: u64,
@@ -30,8 +33,9 @@ pub struct TsKv {
     options: Options,
     kvctx: Arc<KvContext>,
     version_set: Arc<RwLock<VersionSet>>,
-
+    forward_index: Arc<RwLock<ForwardIndex>>,
     wal_sender: UnboundedSender<WalTask>,
+//    fff: File,
 }
 
 impl TsKv {
@@ -41,10 +45,17 @@ impl TsKv {
 
         let (sender, receiver) = mpsc::unbounded_channel();
 
-        let core = Self { options: opt,
-                          kvctx,
-                          version_set: Arc::new(RwLock::new(vs)),
-                          wal_sender: sender };
+        let mut fidx = ForwardIndex::new(&opt.forward_index_conf.path);
+        fidx.load_cache_file().await.map_err(|err| { Error::LogRecordErr { source: err } })?;
+
+        let core = Self {
+            options: opt,
+            kvctx,
+            forward_index: Arc::new(RwLock::new(fidx)),
+            version_set: Arc::new(RwLock::new(vs)),
+            wal_sender: sender,
+//            fff: file_manager::get_file_manager().open_create_file("/tmp/fff").unwrap(),
+        };
         core.run_wal_job(receiver);
 
         Ok(core)
@@ -62,6 +73,29 @@ impl TsKv {
     pub async fn write(&self,
                        write_batch: WritePointsRpcRequest)
                        -> Result<WritePointsRpcResponse> {
+        /*
+        let entry = flatbuffers::root::<protos::models::Points>(&write_batch.points).map_err(|err| {
+            Error::InvalidFlatbuffer { source: err }
+        })?;
+        for point in entry.points().unwrap() {
+            let mut info = SeriesInfo::new();
+            for tag in point.tags().unwrap() {
+                info.tags.push(Tag::new(tag.key().unwrap().to_vec(),
+                                        tag.value().unwrap().to_vec()));
+            }
+            for field in point.fields().unwrap() {
+                info.field_infos.push(FieldInfo::from_parts(
+                    field.name().unwrap().to_vec(),
+                    ValueType::from(field.type_()),
+                ))
+            }
+            self.forward_index.write().await.add_series_info_if_not_exists(info)
+                .await.map_err(|err| {
+                Error::ForwardIndexErr { source: err }
+            })?;
+        }
+        */
+
         let (cb, rx) = oneshot::channel();
         self.wal_sender
             .send(WalTask::Write { points: write_batch.points, cb })
@@ -101,7 +135,7 @@ impl TsKv {
                         let ret = wal_manager.write(wal::WalEntryType::Write, &points).await;
                         dbg!(points);
                         let _ = cb.send(ret);
-                    },
+                    }
                 }
             }
         };
@@ -117,13 +151,13 @@ impl TsKv {
                         match tskv.write(req).await {
                             Ok(resp) => {
                                 let _ret = tx.send(Ok(resp));
-                            },
+                            }
                             Err(err) => {
                                 let _ret = tx.send(Err(err));
-                            },
+                            }
                         }
                         dbg!("TSKV write points completed.");
-                    },
+                    }
                     _ => panic!("unimplented."),
                 }
             }
@@ -172,11 +206,11 @@ impl KvContext {
                              -> Result<()> {
         let (tx, rx) = oneshot::channel();
         self.front_handler.add_task(partion_id, async move {
-                               let ps = flatbuffers::root::<models::Points>(&entry.points).unwrap();
-                               let err = 0;
-                               // todo
-                               let _ = tx.send(err);
-                           })?;
+            let ps = flatbuffers::root::<models::Points>(&entry.points).unwrap();
+            let err = 0;
+            // todo
+            let _ = tx.send(err);
+        })?;
         rx.await.unwrap();
         Ok(())
     }
@@ -195,9 +229,13 @@ mod test {
     use crate::{kv_option::WalConfig, wal::WalTask, TsKv};
 
     async fn get_tskv() -> TsKv {
-        let opt = crate::kv_option::Options { wal: WalConfig { dir: String::from("/tmp/test/"),
-                                                               ..Default::default() },
-                                              ..Default::default() };
+        let opt = crate::kv_option::Options {
+            wal: WalConfig {
+                dir: String::from("/tmp/test/"),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
 
         TsKv::open(opt).await.unwrap()
     }

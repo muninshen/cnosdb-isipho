@@ -8,8 +8,8 @@ const VERSION: u8 = 1;
 
 pub struct ForwardIndex {
     series_info_set: HashMap<models::SeriesID, AbstractSeriesInfo>,
-    record_writer: record_file::Writer,
-    record_reader: record_file::Reader,
+    //    record_writer: record_file::Writer,
+//    record_reader: record_file::Reader,
     file_path: PathBuf,
 }
 
@@ -42,13 +42,14 @@ impl ForwardIndex {
     pub fn new(path: &PathBuf) -> ForwardIndex {
         ForwardIndex {
             series_info_set: HashMap::new(),
-            record_writer: record_file::Writer::new(path),
-            record_reader: record_file::Reader::new(path),
+            //record_writer: record_file::Writer::new(path),
+            //record_reader: record_file::Reader::new(path),
             file_path: path.clone(),
         }
     }
 
-    pub async fn add_series_info_if_not_exists(&mut self, series_info: SeriesInfo) -> ForwardIndexResult<()> {
+    pub async fn add_series_info_if_not_exists(&mut self, mut series_info: SeriesInfo) -> ForwardIndexResult<()> {
+        series_info.update_id();
         match self.series_info_set.entry(series_info.series_id()) {
             std::collections::hash_map::Entry::Occupied(mut entry) => {
                 let mut abs_series_info = entry.get_mut();
@@ -66,6 +67,7 @@ impl ForwardIndex {
                     }
 
                     if !flag {
+                        /*
                         let record = self.record_reader.read_one(
                             abs_series_info.pos.to_usize().unwrap()).await.map_err(|err| {
                             ForwardIndexError::ReadFile { source: err }
@@ -88,11 +90,13 @@ impl ForwardIndex {
                         })?;
                         abs_series_info.pos = pos;
                         abs_series_info.abstract_field_infos.push(abs_field_info);
+                         */
                     }
                 }
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
                 let data = series_info.encode();
+                /*
                 let pos = self.record_writer.write_record(
                     VERSION,
                     ForwardIndexAction::AddSeriesInfo.u8_number(),
@@ -101,6 +105,7 @@ impl ForwardIndex {
                     ForwardIndexError::WriteFile { source: err }
                 })?;
                 entry.insert(series_info.to_abstract(pos));
+                 */
             }
         }
 
@@ -108,11 +113,15 @@ impl ForwardIndex {
     }
 
     pub async fn close(&mut self) -> ForwardIndexResult<()> {
+        /*
         self.record_writer.close().await.map_err(|err| {
             ForwardIndexError::CloseFile { source: err }
         })
+         */
+        Ok(())
     }
 
+    /*
     pub async fn del_series_info(&mut self, series_id: SeriesID) -> ForwardIndexResult<()> {
         match self.series_info_set.entry(series_id) {
             std::collections::hash_map::Entry::Occupied(entry) => {
@@ -132,6 +141,28 @@ impl ForwardIndex {
             }
         }
     }
+
+     */
+
+    /*
+    pub async fn get_series_info(&mut self, series_id: SeriesID) -> ForwardIndexResult<SeriesInfo> {
+        return match self.series_info_set.entry(series_id) {
+            std::collections::hash_map::Entry::Occupied(entry) => {
+                let abs_series_info = entry.get();
+                let record = self.record_reader.read_one(
+                    abs_series_info.pos.to_usize().unwrap()).await.map_err(|err| {
+                    ForwardIndexError::ReadFile { source: err }
+                })?;
+                let series_info = SeriesInfo::decoded(&record.data);
+                Ok(series_info)
+            }
+            std::collections::hash_map::Entry::Vacant(entry) => {
+                Err(ForwardIndexError::SeriesNotExists)
+            }
+        };
+    }
+
+     */
 
     pub async fn load_cache_file(&mut self) -> RecordFileResult<()> {
         let mut record_reader = record_file::Reader::new(&self.file_path);
@@ -179,5 +210,19 @@ impl ForwardIndex {
 impl From<&str> for ForwardIndex {
     fn from(path: &str) -> Self {
         ForwardIndex::new(&PathBuf::from(path))
+    }
+}
+
+
+#[derive(Clone)]
+pub struct ForwardIndexConfig {
+    pub path: PathBuf,
+}
+
+impl Default for ForwardIndexConfig {
+    fn default() -> Self {
+        ForwardIndexConfig {
+            path: PathBuf::from("/tmp/test/tskv.fidx")
+        }
     }
 }

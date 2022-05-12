@@ -277,8 +277,8 @@ mod test {
 
     fn new(max_resident: usize, max_non_resident: usize, page_len_scale: usize) -> FileSystem {
         FileSystem::new(Options::default().max_resident(max_resident)
-                                          .max_non_resident(max_non_resident)
-                                          .page_len_scale(page_len_scale))
+            .max_non_resident(max_non_resident)
+            .page_len_scale(page_len_scale))
     }
 
     fn file_len(file: &StdFile) -> u64 {
