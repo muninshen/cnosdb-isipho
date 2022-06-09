@@ -15,7 +15,7 @@ chain_width = 60
 color = "Auto"
 # Combine control expressions with function calls.
 combine_control_expr = true
-comment_width = 100 # default: 80
+comment_width = 80
 # Replace strings of _ wildcards by a single .. in tuple patterns
 condense_wildcard_suffixes = true # default: false
 control_brace_style = "AlwaysSameLine"
@@ -30,7 +30,7 @@ error_on_unformatted = false
 fn_args_layout = "Tall"
 fn_call_width = 60
 fn_single_line = false
-force_explicit_abi = false # default: true
+force_explicit_abi = true
 force_multiline_blocks = false
 format_code_in_doc_comments = false
 format_generated_files = false
@@ -59,7 +59,9 @@ merge_derives = false # default: true
 imports_granularity = "Crate" # default: "Preserve"
 # Unix or Windows line endings
 newline_style = "Unix" # default: "Auto"
+# Convert /* */ comments to // comments where possible
 normalize_comments = true # default: false
+# Convert #+[doc] and #:doc] attributes to //! and //4 doc comments.
 normalize_doc_attributes = false
 # When structs, slices, arrays, and block/array-like macros are used as the last argument in an expression list, allow them to
 # overflow (like blocks/closures) instead of being indented on a new line.
