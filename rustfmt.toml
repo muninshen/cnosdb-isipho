@@ -1,22 +1,112 @@
-# https://rust-coding-guidelines.github.io/rust-coding-guidelines-zh/safe-guides/Appendix/templates/rustfmt.toml.html
-version = "Two"
-use_small_heuristics="Max"
-indent_style="Visual" 
-enum_discrim_align_threshold = 10 
-match_block_trailing_comma=true
-imports_granularity="Crate" 
-group_imports="StdExternalCrate" 
-format_macro_matchers=true 
-force_explicit_abi=false 
-comment_width=100
-wrap_comments=true
-normalize_comments=true
-report_fixme="Unnumbered"
-condense_wildcard_suffixes=true
-newline_style="Unix"
-merge_derives = false
+# https://rust-lang.github.io/rustfmt/
 
-# ignore dir
+# Maximum width of an array literal before falling back to vertical formatting.
+array_width = 60
+# Maximum width of the args of a function-like attributes before falling back to vertical formatting.
+attr_fn_like_width = 70
+# Where to put a binary operator when a binary expression goes multiline.
+binop_separator = "Front"
+blank_lines_lower_bound = 0
+blank_lines_upper_bound = 1
+brace_style = "SameLineWhere"
+# Maximum width of a chain to fit on one line.
+chain_width = 60
+# Whether to use colored output or not.
+color = "Auto"
+# Combine control expressions with function calls.
+combine_control_expr = true
+comment_width = 100 # default: 80
+# Replace strings of _ wildcards by a single .. in tuple patterns
+condense_wildcard_suffixes = true # default: false
+control_brace_style = "AlwaysSameLine"
+# Specifies which edition is used by the parser.
+edition = "2015"
+empty_item_single_line = true
+# The maximum length of enum variant having discriminant, that gets vertically aligned with others.
+# Variants without discriminants would be ignored for the purpose of alignment.
+enum_discrim_align_threshold = 0
+error_on_line_overflow = false
+error_on_unformatted = false
+fn_args_layout = "Tall"
+fn_call_width = 60
+fn_single_line = false
+force_explicit_abi = false # default: true
+force_multiline_blocks = false
+format_code_in_doc_comments = false
+format_generated_files = false
+format_macro_matchers = true # default: false
+format_macro_bodies = true
+format_strings = false
+hard_tabs = false
+hex_literal_case = "Preserve"
+hide_parse_errors = false
 ignore = [
      "docs",
 ]
+imports_indent = "Block"
+imports_layout = "Mixed"
+indent_style = "Block"
+inline_attribute_width = 0
+license_template_path = ""
+match_arm_blocks = true
+match_arm_leading_pipes = "Never"
+match_block_trailing_comma = true # default: false
+max_width = 100
+# Merge multiple derives into a single one.
+merge_derives = false # default: true
+# How imports should be grouped into `use` statements.
+# Imports will be merged or split to the configured level of granularity.
+imports_granularity = "Crate" # default: "Preserve"
+# Unix or Windows line endings
+newline_style = "Unix" # default: "Auto"
+normalize_comments = true # default: false
+normalize_doc_attributes = false
+# When structs, slices, arrays, and block/array-like macros are used as the last argument in an expression list, allow them to
+# overflow (like blocks/closures) instead of being indented on a new line.
+overflow_delimited_expr = false
+remove_nested_parens = true
+# Reorder impl items. type and const are put first, then macros and methods.
+reorder_impl_items = false
+# Reorder import and extern crate statements alphabetically in groups (a group is separated by a newline).
+reorder_imports = true
+# Controls the strategy for how imports are grouped together.
+group_imports = "StdExternalCrate" # default: "Preserve"
+# Reorder mod declarations alphabetically in group.
+reorder_modules = true
+report_fixme = "Unnumbered" # default: Never
+report_todo = "Never"
+
+# Require a specific version of rustfmt.
+# If you want to make sure that the specific version of rustfmt is used in your CI, use this option.
+#required_version = "CARGO_PKG_VERSION"
+
+# Don't reformat out of line modules
+skip_children = false
+# Maximum line length for single line if-else expressions. A value of 0 (zero) results in if-else expressions always being
+# broken into multiple lines. Note this occurs when use_small_heuristics is set to Off.single_line_if_else_max_width = 50
+space_after_colon = true
+space_before_colon = false
+spaces_around_ranges = false
+struct_field_align_threshold = 0
+struct_lit_single_line = true
+# Maximum width in the body of a struct literal before falling back to vertical formatting. A value of 0 (zero) results in struct
+# literals always being broken into multiple lines. Note this occurs when use_small_heuristics is set to Off.
+struct_lit_width = 18
+# Maximum width in the body of a struct variant before falling back to vertical formatting. A value of 0 (zero) results in
+# struct literals always being broken into multiple lines. Note this occurs when use_small_heuristics is set to Off.
+struct_variant_width = 35
+tab_spaces = 4
+trailing_comma = "Vertical"
+# Add trailing semicolon after break, continue and return
+trailing_semicolon = true
+type_punctuation_density = "Wide"
+unstable_features = false
+# Use field initialize shorthand if possible.
+use_field_init_shorthand = false
+use_small_heuristics = "Default"
+# Replace uses of the try! macro by the ? shorthand
+use_try_shorthand = false
+# Which version of the formatting rules to use.
+version = "Two" # default: "One"
+where_single_line = false
+wrap_comments = true # default: false
